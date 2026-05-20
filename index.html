@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .url-input-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .url-input-group input {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .url-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-card.income .value { color: #28a745; }
+        .stat-card.expense .value { color: #dc3545; }
+        .stat-card.balance .value { color: #667eea; }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .chart-box h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        canvas {
+            max-height: 300px;
+        }
+
+        .filters {
+            padding: 0 30px 20px 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filters select, .filters input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            padding: 0 30px 30px 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Controle Financeiro</h1>
+            <p>Dashboard inteligente para suas finanças pessoais</p>
+        </div>
+
+        <div class="controls">
+            <div class="url-input-group">
+                <label>🔗 URL do Google Sheets (CSV):</label>
+                <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/SEU_ID/export?format=csv" 
+                       value="https://docs.google.com/spreadsheets/d/1qkyuW2YJjYk4qRZwLzx8lU5yQ2KxJpVnX9WmR7YtB3c/export?format=csv">
+                <button class="btn btn-primary" onclick="loadData()">📊 Carregar Dados</button>
+                <button class="btn btn-secondary" onclick="showHelp()">❓ Ajuda</button>
+            </div>
+        </div>
+
+        <div id="stats" class="stats"></div>
+
+        <div class="filters">
+            <select id="categoryFilter" onchange="filterData()">
+                <option value="">Todas Categorias</option>
+            </select>
+            <select id="typeFilter" onchange="filterData()">
+                <option value="">Todos os Tipos</option>
+                <option value="Receita">Receita</option>
+                <option value="Despesa">Despesa</option>
+            </select>
+            <input type="month" id="monthFilter" onchange="filterData()">
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-box">
+                <h3>📊 Despesas por Categoria</h3>
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>💳 Formas de Pagamento</h3>
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div id="tableContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let originalData = [];
+        let filteredData = [];
+        let categoryChart, paymentChart;
+
+        // Função para carregar dados do Google Sheets
+        async function loadData() {
+            showLoading();
+            
+            const url = document.getElementById('sheetUrl').value;
+            if (!url) {
+                showError('Por favor, insira a URL do Google Sheets');
+                return;
+            }
+
+            try {
+                // Converter URL do Google Sheets para CSV se necessário
+                let csvUrl = url;
+                if (url.includes('docs.google.com/spreadsheets')) {
+                    if (!url.includes('export?format=csv')) {
+                        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match) {
+                            csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
+                        }
+                    }
+                }
+
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        if (results.data && results.data.length > 0) {
+                            processData(results.data);
+                        } else {
+                            showError('Nenhum dado encontrado no arquivo');
+                        }
+                    },
+                    error: function(error) {
+                        showError('Erro ao processar o arquivo: ' + error.message);
+                    }
+                });
+            } catch (error) {
+                showError('Erro ao carregar os dados: ' + error.message);
+            }
+        }
+
+        // Processar os dados carregados
+        function processData(data) {
+            originalData = data.map(row => {
+                // Normalizar os dados
+                const valor = parseFloat(String(row.Valor || '0').replace(',', '.')) || 0;
+                const tipo = row.Tipo === 'Despesa' ? 'Despesa' : 'Receita';
+                
+                return {
+                    data: row['Carimbo de data/hora'] || '',
+                    tipo: tipo,
+                    categoria: row.Categoria || 'Outros',
+                    descricao: row.Descricao || '',
+                    valor: valor,
+                    formaPagamento: row['Forma de Pagamento'] || 'Outros',
+                    parcelamento: row.Parcelamento || '1x',
+                    necessidade: row.Necessidade || 'Não',
+                    planejamento: row.Planejamento || '',
+                    registro: row.Registro || ''
+                };
+            });
+
+            filterData();
+        }
+
+        // Filtrar dados
+        function filterData() {
+            const category = document.getElementById('categoryFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const month = document.getElementById('monthFilter').value;
+
+            filteredData = originalData.filter(row => {
+                if (category && row.categoria !== category) return false;
+                if (type && row.tipo !== type) return false;
+                if (month) {
+                    const rowDate = new Date(row.data);
+                    const rowMonth = `${rowDate.getFullYear()}-${String(rowDate.getMonth() + 1).padStart(2, '0')}`;
+                    if (rowMonth !== month) return false;
+                }
+                return true;
+            });
+
+            updateStats();
+            updateCharts();
+            updateTable();
+            updateFilters();
+        }
+
+        // Atualizar estatísticas
+        function updateStats() {
+            const totalIncome = filteredData.filter(row => row.tipo === 'Receita').reduce((sum, row) => sum + row.valor, 0);
+            const totalExpense = filteredData.filter(row => row.tipo === 'Despesa').reduce((sum, row) => sum + row.valor, 0);
+            const balance = totalIncome - totalExpense;
+
+            const statsHtml = `
+                <div class="stat-card income">
+                    <h3>💰 Receitas Totais</h3>
+                    <div class="value">R$ ${totalIncome.toFixed(2)}</div>
+                </div>
+                <div class="stat-card expense">
+                    <h3>💸 Despesas Totais</h3>
+                    <div class="value">R$ ${totalExpense.toFixed(2)}</div>
+                </div>
+                <div class="stat-card balance">
+                    <h3>⚖️ Saldo</h3>
+                    <div class="value">R$ ${balance.toFixed(2)}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>📝 Total Transações</h3>
+                    <div class="value">${filteredData.length}</div>
+                </div>
+            `;
+            
+            document.getElementById('stats').innerHTML = statsHtml;
+        }
+
+        // Atualizar gráficos
+        function updateCharts() {
+            // Gráfico de despesas por categoria
+            const expensesByCategory = {};
+            filteredData.filter(row => row.tipo === 'Despesa').forEach(row => {
+                expensesByCategory[row.categoria] = (expensesByCategory[row.categoria] || 0) + row.valor;
+            });
+
+            const categories = Object.keys(expensesByCategory);
+            const values = Object.values(expensesByCategory);
+
+            if (categoryChart) categoryChart.destroy();
+            
+            const ctx1 = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx1, {
+                type: 'pie',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true
+                }
+            });
+
+            // Gráfico de formas de pagamento
+            const paymentMethods = {};
+            filteredData.filter(row => row.tipo === 'Despesa').forEach(row => {
+                paymentMethods[row.formaPagamento] = (paymentMethods[row.formaPagamento] || 0) + row.valor;
+            });
+
+            const payments = Object.keys(paymentMethods);
+            const paymentValues = Object.values(paymentMethods);
+
+            if (paymentChart) paymentChart.destroy();
+            
+            const ctx2 = document.getElementById('paymentChart').getContext('2d');
+            paymentChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: payments,
+                    datasets: [{
+                        data: paymentValues,
+                        backgroundColor: ['#4BC0C0', '#FF9F40', '#FF6384', '#36A2EB', '#9966FF']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true
+                }
+            });
+        }
+
+        // Atualizar tabela
+        function updateTable() {
+            const tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Categoria</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Forma Pagamento</th>
+                            <th>Necessidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData.map(row => `
+                            <tr>
+                                <td>${new Date(row.data).toLocaleDateString('pt-BR')}</td>
+                                <td><span style="color: ${row.tipo === 'Receita' ? '#28a745' : '#dc3545'}">${row.tipo}</span></td>
+                                <td>${row.categoria}</td>
+                                <td>${row.descricao}</td>
+                                <td style="color: ${row.tipo === 'Receita' ? '#28a745' : '#dc3545'}">R$ ${row.valor.toFixed(2)}</td>
+                                <td>${row.formaPagamento}</td>
+                                <td>${row.necessidade}</td>
+                            </tr>
+                        `).join('')}
+                        ${filteredData.length === 0 ? '<tr><td colspan="7" style="text-align: center">Nenhum dado encontrado</td></tr>' : ''}
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('tableContent').innerHTML = tableHtml;
+        }
+
+        // Atualizar filtros
+        function updateFilters() {
+            const categories = [...new Set(originalData.map(row => row.categoria))];
+            const categorySelect = document.getElementById('categoryFilter');
+            const currentCategory = categorySelect.value;
+            
+            categorySelect.innerHTML = '<option value="">Todas Categorias</option>' +
+                categories.map(cat => `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat}</option>`).join('');
+        }
+
+        // Mostrar loading
+        function showLoading() {
+            document.getElementById('stats').innerHTML = '<div class="loading">🔄 Carregando dados...</div>';
+            document.getElementById('tableContent').innerHTML = '';
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `❌ ${message}`;
+            document.getElementById('stats').innerHTML = '';
+            document.getElementById('tableContent').innerHTML = '';
+            document.querySelector('.container').insertBefore(errorDiv, document.querySelector('.stats'));
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        // Mostrar ajuda
+        function showHelp() {
+            alert(`📖 Como usar:
+
+1. Publique seu Google Sheets como público ou compartilhe com "Qualquer um com o link pode visualizar"
+
+2. Copie o ID da sua planilha da URL:
+   https://docs.google.com/spreadsheets/d/SEU_ID_AQUI/edit
+
+3. Cole a URL no formato:
+   https://docs.google.com/spreadsheets/d/SEU_ID/export?format=csv
+
+4. Clique em "Carregar Dados"
+
+Colunas necessárias:
+- Carimbo de data/hora
+- Tipo (Receita/Despesa)
+- Categoria
+- Descrição
+- Valor
+- Forma de Pagamento
+- Necessidade`);
+        }
+
+        // Carregar dados exemplo ao iniciar
+        setTimeout(() => {
+            if (originalData.length === 0) {
+                loadExampleData();
+            }
+        }, 1000);
+
+        // Dados exemplo
+        function loadExampleData() {
+            originalData = [
+                { data: '2024-01-15', tipo: 'Receita', categoria: 'Salário', descricao: 'Salário Janeiro', valor: 5000, formaPagamento: 'Dinheiro', necessidade: 'Essencial' },
+                { data: '2024-01-20', tipo: 'Despesa', categoria: 'Alimentação', descricao: 'Supermercado', valor: 350, formaPagamento: 'Crédito', necessidade: 'Essencial' },
+                { data: '2024-01-25', tipo: 'Despesa', categoria: 'Lazer', descricao: 'Cinema', valor: 80, formaPagamento: 'Débito', necessidade: 'Não Essencial' },
+                { data: '2024-02-10', tipo: 'Receita', categoria: 'Freelancer', descricao: 'Projeto Web', valor: 1200, formaPagamento: 'PIX', necessidade: 'Essencial' },
+                { data: '2024-02-15', tipo: 'Despesa', categoria: 'Transporte', descricao: 'Uber', valor: 150, formaPagamento: 'Crédito', necessidade: 'Essencial' },
+                { data: '2024-02-20', tipo: 'Despesa', categoria: 'Alimentação', descricao: 'Restaurante', valor: 120, formaPagamento: 'Débito', necessidade: 'Não Essencial' }
+            ];
+            filterData();
+        }
+    </script>
+</body>
+</html>
